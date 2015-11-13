@@ -1,3 +1,4 @@
+//  Package encdec contains a simple binary encoder/decoder designed for fast marshalling/unmarshalling of fixed array of types into binary stream.
 package encdec
 
 import (

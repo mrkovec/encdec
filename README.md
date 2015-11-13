@@ -13,18 +13,18 @@ Functionality outline:
         age int
         registered time.Time
     }
-    func (mt *user) MarshalBinary() ([]byte, error) {
+    func (u *user) MarshalBinary() ([]byte, error) {
         enc := encdec.NewEnc()
-        enc.ByteSlice([]byte(mt.name))
-        enc.Int64(int64(mt.age))
-        enc.Marshaler(mt.registered)
+        enc.ByteSlice([]byte(u.name))
+        enc.Int64(int64(u.age))
+        enc.Marshaler(u.registered)
         return enc.Bytes(), enc.Error()
     }
-    func (mt *user) UnmarshalBinary(data []byte) error {
+    func (u *user) UnmarshalBinary(data []byte) error {
         dec := encdec.NewDec(data)
-        mt.name = string(dec.ByteSlice())
-        mt.age = int(dec.Int64())
-        dec.Unmarshaler(&mt.registered)
+        u.name = string(dec.ByteSlice())
+        u.age = int(dec.Int64())
+        dec.Unmarshaler(&u.registered)
         return dec.Error()
     }
     
@@ -47,7 +47,7 @@ Functionality outline:
     l := int(dec.Uint64())
     users = make([]user, l)
     for i := 0; i < l; i++ {
-	dec.Unmarshaler(&users[i])
+        dec.Unmarshaler(&users[i])
     }    
     if dec.Error() != nil {
         panic(dec.Error())
@@ -66,4 +66,4 @@ Alternatively encdec can write to or read from arbitrary io.Reader/io.Writer
     dec.ReadFrom(network)
     ...
 ```
-For examples look in GoDoc or in test/benchmark files.
+For more examples look in GoDoc or in test/benchmark files.
