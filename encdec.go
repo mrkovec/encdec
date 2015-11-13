@@ -1,90 +1,91 @@
 package encdec
 
 import (
-	"math"
 	"encoding"
 	"encoding/binary"
 	"errors"
 	"io"
+	"math"
 )
+
 var (
-	ErrEncode =  errors.New("encdec: encoding error")
-	ErrDecode =  errors.New("encdec: decoding error")
-	ErrNoDecData =  errors.New("encdec: nothing to decode")
-	ErrDecodeNotEnoughtData =  errors.New("encdec: not enought data to decode")
+	errEncode               = errors.New("encdec: encoding error")
+	errDecode               = errors.New("encdec: decoding error")
+	errNoDecData            = errors.New("encdec: nothing to decode")
+	errDecodeNotEnoughtData = errors.New("encdec: not enought data to decode")
 )
 
 // simple encoder
 // streams encoded data into []byte buffer
 type Enc struct {
-	err error
-	buf64 [2*binary.MaxVarintLen64]byte
+	err    error
+	buf64  [2 * binary.MaxVarintLen64]byte
 	encbuf []byte
-	lng int
+	lng    int
 }
 
 func NewEnc() *Enc {
 	return &Enc{
-		err: nil,
-		lng: 0,
+		err:    nil,
+		lng:    0,
 		encbuf: make([]byte, 0, 1024)}
 }
 
-//  implement io.WriterTo
-func (e *Enc) WriteTo(w io.Writer) (int64, error) { 
+//  WriteTo implements io.WriterTo
+func (e *Enc) WriteTo(w io.Writer) (int64, error) {
 	if e.err != nil {
 		return 0, e.err
 	}
 	e.lng, e.err = w.Write(e.encbuf)
 	if e.lng < len(e.encbuf) {
-		e.err = ErrEncode
+		e.err = errEncode
 	}
 	return int64(e.lng), e.err
 }
 
-//  discards all encoded data
-func (e *Enc) Reset() { 
+//  Reset discards all encoded data
+func (e *Enc) Reset() {
 	if e.err != nil {
-		return 
+		return
 	}
 	e.encbuf = e.encbuf[0:0]
 }
 
-// encode a encoding.BinaryMarshaler into buffer 
-func (e *Enc) Marshaler(x encoding.BinaryMarshaler) { 
+// Marshaler encodes a encoding.BinaryMarshaler into buffer
+func (e *Enc) Marshaler(x encoding.BinaryMarshaler) {
 	if e.err != nil {
-		return 
+		return
 	}
 	var buf []byte
 	buf, e.err = x.MarshalBinary()
 	if e.err != nil {
-		return 
+		return
 	}
 	e.ByteSlice(buf)
 }
 
-// encode a float64 into buffer
+// Float64 encodes a float64 into buffer
 func (e *Enc) Float64(x float64) {
 	if e.err != nil {
-		return 
+		return
 	}
 	e.Uint64(math.Float64bits(x))
 }
 
-// encode a int64 into buffer
+// Int64 encodes a int64 into buffer
 func (e *Enc) Int64(x int64) []byte {
 	if e.err != nil {
 		return nil
 	}
-    defer func(e *Enc) {
-        if r := recover(); r != nil {
-            e.err = ErrEncode
-        }
-    }(e)
+	defer func(e *Enc) {
+		if r := recover(); r != nil {
+			e.err = errEncode
+		}
+	}(e)
 
 	e.lng = binary.PutVarint(e.buf64[:], x)
 	if e.lng == 0 {
-		e.err  = ErrEncode
+		e.err = errEncode
 		return nil
 	}
 	e.encbuf = append(e.encbuf, byte(e.lng))
@@ -92,20 +93,20 @@ func (e *Enc) Int64(x int64) []byte {
 	return e.buf64[:e.lng]
 }
 
-// encode a uint64 into buffer
+// Uint64 encodes a uint64 into buffer
 func (e *Enc) Uint64(x uint64) []byte {
 	if e.err != nil {
 		return nil
 	}
-    defer func(e *Enc) {
-        if r := recover(); r != nil {
-            e.err = ErrEncode
-        }
-    }(e)
+	defer func(e *Enc) {
+		if r := recover(); r != nil {
+			e.err = errEncode
+		}
+	}(e)
 
 	e.lng = binary.PutUvarint(e.buf64[:], x)
 	if e.lng == 0 {
-		e.err  = ErrEncode
+		e.err = errEncode
 		return nil
 	}
 	e.encbuf = append(e.encbuf, byte(e.lng))
@@ -113,36 +114,36 @@ func (e *Enc) Uint64(x uint64) []byte {
 	return e.buf64[:e.lng]
 }
 
-// encode a slice of bytes into buffer
-func (e *Enc) ByteSlice(x []byte)  {
+// ByteSlice encodes a slice of bytes into buffer
+func (e *Enc) ByteSlice(x []byte) {
 	if e.err != nil {
-		return 
+		return
 	}
 	if x == nil {
-		e.err  = ErrEncode
+		e.err = errEncode
 		return
 	}
 	e.lng = len(x)
-	if e.lng > 0  && e.lng < 256  {
+	if e.lng > 0 && e.lng < 256 {
 		e.encbuf = append(e.encbuf, byte(e.lng))
 	} else {
 		e.encbuf = append(e.encbuf, byte(0))
 		e.Uint64(uint64(e.lng))
 	}
 	if e.lng > 0 {
-		e.encbuf = append(e.encbuf, x...)	
+		e.encbuf = append(e.encbuf, x...)
 	}
 }
 
-// encode a byte into buffer
+// Byte encodes a byte into buffer
 func (e *Enc) Byte(x byte) {
 	if e.err != nil {
-		return 
+		return
 	}
 	e.encbuf = append(e.encbuf, x)
 }
 
-// returns byte slice of encoded data
+// Bytes returns byte slice of encoded data
 func (e Enc) Bytes() []byte {
 	if e.err != nil {
 		return nil
@@ -150,45 +151,45 @@ func (e Enc) Bytes() []byte {
 	return e.encbuf
 }
 
-//  returns encoding error if any
+//  Error returns encoding error if any
 func (e Enc) Error() error {
 	return e.err
 }
-// returns actual length of encoded data
+
+// Len returns actual length of encoded data
 func (e Enc) Len() int {
 	return len(e.encbuf)
 }
 
-
 // simple decoder
 // read encoded data from []byte buffer
 type Dec struct {
-	err error
-	i int
-	lng int
-	lst int
+	err    error
+	i      int
+	lng    int
+	lst    int
 	decbuf []byte
 }
 
 func NewDec(b []byte) (d *Dec) {
 	d = &Dec{
-		err: nil, 
-		i: 0,
-		lng: 0,
-		lst: 0,
+		err:    nil,
+		i:      0,
+		lng:    0,
+		lst:    0,
 		decbuf: b}
 	if b == nil {
-		d.err = ErrDecode
-	}  
+		d.err = errDecode
+	}
 	return
 }
 
-// reads data from a io.Reader
+// ReadFrom reads data from a io.Reader
 func (d *Dec) ReadFrom(r io.Reader) (int64, error) {
 	if d.err != nil {
 		return 0, d.err
 	}
-	buf := make([]byte,256)
+	buf := make([]byte, 256)
 	n := 0
 	tn := 0
 	for {
@@ -208,28 +209,28 @@ func (d *Dec) ReadFrom(r io.Reader) (int64, error) {
 
 }
 
-// resets decoder to initial state
-func (d *Dec) Reset() { 
+// Reset resets decoder to initial state
+func (d *Dec) Reset() {
 	if d.err != nil {
-		return 
+		return
 	}
 	d.i = 0
 }
 
-// decode a encoding.BinaryUnmarshaler from buffer
-func (d *Dec) Unmarshaler(x encoding.BinaryUnmarshaler) { 
+// Unmarshaler decodes a encoding.BinaryUnmarshaler from buffer
+func (d *Dec) Unmarshaler(x encoding.BinaryUnmarshaler) {
 	d.havedata()
 	if d.err != nil {
-		return 
-	}
-	if x == nil {
-		d.err = ErrDecode
 		return
 	}
-	d.err = x.UnmarshalBinary(d.ByteSlice()) 
+	if x == nil {
+		d.err = errDecode
+		return
+	}
+	d.err = x.UnmarshalBinary(d.ByteSlice())
 }
 
-// decode a float64 from buffer
+// Float64 decodes a float64 from buffer
 func (d *Dec) Float64() float64 {
 	d.havedata()
 	if d.err != nil {
@@ -238,7 +239,7 @@ func (d *Dec) Float64() float64 {
 	return math.Float64frombits(d.Uint64())
 }
 
-// decode a int64 from buffer
+// Int64 decodes a int64 from buffer
 func (d *Dec) Int64() int64 {
 	d.havedata()
 	if d.err != nil {
@@ -246,30 +247,30 @@ func (d *Dec) Int64() int64 {
 	}
 	d.lng = int(d.decbuf[d.i])
 	if d.lng <= 0 {
-		d.err = ErrDecode
+		d.err = errDecode
 		return 0
 	}
 	d.i++
-	d.lst = d.i + d.lng 
+	d.lst = d.i + d.lng
 	if d.lst > len(d.decbuf) {
-		d.err = ErrDecodeNotEnoughtData
+		d.err = errDecodeNotEnoughtData
 		return 0
 	}
 	var x int64
 	if d.lst == len(d.decbuf) {
-		x, d.i =  binary.Varint(d.decbuf[d.i:])
+		x, d.i = binary.Varint(d.decbuf[d.i:])
 	} else {
-		x, d.i =  binary.Varint(d.decbuf[d.i:d.lst])
+		x, d.i = binary.Varint(d.decbuf[d.i:d.lst])
 	}
 	if d.i <= 0 {
-		d.err = ErrDecode
+		d.err = errDecode
 		return 0
 	}
 	d.i = d.lst
 	return x
 }
 
-// decode a uint64 from buffer
+// Uint64 decodes a uint64 from buffer
 func (d *Dec) Uint64() uint64 {
 	d.havedata()
 	if d.err != nil {
@@ -277,31 +278,31 @@ func (d *Dec) Uint64() uint64 {
 	}
 	d.lng = int(d.decbuf[d.i])
 	if d.lng <= 0 {
-		d.err = ErrDecode
+		d.err = errDecode
 		return 0
 	}
 	d.i++
-	d.lst = d.i + d.lng 
+	d.lst = d.i + d.lng
 	if d.lst > len(d.decbuf) {
-		d.err = ErrDecodeNotEnoughtData
+		d.err = errDecodeNotEnoughtData
 		return 0
 	}
 	var x uint64
 	var i int
 	if d.lst == len(d.decbuf) {
-		x, i =  binary.Uvarint(d.decbuf[d.i:])
+		x, i = binary.Uvarint(d.decbuf[d.i:])
 	} else {
-		x, i =  binary.Uvarint(d.decbuf[d.i:d.lst])
+		x, i = binary.Uvarint(d.decbuf[d.i:d.lst])
 	}
 	if i <= 0 {
-		d.err = ErrDecode
+		d.err = errDecode
 		return 0
 	}
 	d.i = d.lst
 	return x
 }
 
-// decode a slice of bytes from buffer
+// ByteSlice decodes a slice of bytes from buffer
 func (d *Dec) ByteSlice() []byte {
 	d.havedata()
 	if d.err != nil {
@@ -314,27 +315,27 @@ func (d *Dec) ByteSlice() []byte {
 	} else {
 		d.lng = int(d.Uint64())
 	}
-	
+
 	if d.lng == 0 {
 		return []byte{}
 	}
-	d.lst = d.i + d.lng 
-	
+	d.lst = d.i + d.lng
+
 	if d.lst > len(d.decbuf) {
-		d.err = ErrDecodeNotEnoughtData
+		d.err = errDecodeNotEnoughtData
 		return nil
 	}
 	if d.lst == len(d.decbuf) {
 		buf := d.decbuf[d.i:]
 		d.i = d.lst
-		return  buf
-	} 
+		return buf
+	}
 	buf := d.decbuf[d.i:d.lst]
 	d.i = d.lst
 	return buf
 }
 
-// decode a byte from buffer
+// Byte decodes a byte from buffer
 func (d *Dec) Byte() byte {
 	d.havedata()
 	if d.err != nil {
@@ -345,12 +346,12 @@ func (d *Dec) Byte() byte {
 	return b
 }
 
-// skips next encoded entity
+// Skip skips next encoded entity
 func (d *Dec) Skip() {
 	d.havedata()
 	if d.err != nil {
-		return 
-	}	
+		return
+	}
 
 	b := d.decbuf[d.i]
 	d.i++
@@ -360,37 +361,34 @@ func (d *Dec) Skip() {
 		d.lng = int(d.Uint64())
 	}
 	if d.lng < 0 {
-		d.err = ErrDecode
-		return 
+		d.err = errDecode
+		return
 	}
-	d.lst = d.i + d.lng 
+	d.lst = d.i + d.lng
 	if d.lst > len(d.decbuf) {
-		d.err = ErrDecode
+		d.err = errDecode
 		return
 	}
 	d.i = d.lst
 }
 
-//  returns decoding error if any
+//  Error returns decoding error if any
 func (d Dec) Error() error {
 	return d.err
 }
 
-// length of undecoded buffer
+// Len length of undecoded buffer
 func (d Dec) Len() int {
 	return len(d.decbuf) - d.Pos()
 }
 
-//  actual decoding position in buffer
+//  Pos actual decoding position in buffer
 func (d Dec) Pos() int {
 	return int(d.i)
 }
 
 func (d *Dec) havedata() {
 	if d.err == nil && d.i >= len(d.decbuf) {
-		d.err = ErrNoDecData	
+		d.err = errNoDecData
 	}
 }
-
-
-

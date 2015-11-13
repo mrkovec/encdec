@@ -1,16 +1,13 @@
 package encdec
 
 import (
+	"bytes"
+	"encoding/gob"
 	"testing"
 	"testing/quick"
-	"bytes"
- 	"time"
- 	//"errors"
- 	//"encoding"
- 	// "encoding/json"
- 	"encoding/gob"
- 	// "fmt"
+	"time"
 )
+
 var nilerr error
 
 func TestQuickEncDec(t *testing.T) {
@@ -30,7 +27,6 @@ func TestQuickEncDec(t *testing.T) {
 		enc.ByteSlice([]byte(str))
 		t := time.Now()
 		enc.Marshaler(t)
-		
 
 		dec := NewDec(enc.Bytes())
 		bd := dec.Byte()
@@ -38,7 +34,7 @@ func TestQuickEncDec(t *testing.T) {
 		yd := dec.Int64()
 		dec.Reset() //start from begining
 		bd = dec.Byte()
-		xd = dec.Uint64()		
+		xd = dec.Uint64()
 		yd = dec.Int64()
 		fd := dec.Float64()
 		bufd := dec.ByteSlice()
@@ -49,7 +45,7 @@ func TestQuickEncDec(t *testing.T) {
 		if enc.Error() != nil || dec.Error() != nil || b != bd || x != xd || y != yd || f != fd || !bytes.Equal(buf, bufd) || str != strd || !t.Equal(td) {
 			return false
 		}
-		enc.WriteTo(&buffer) //send encoded data to buffer
+		enc.WriteTo(&buffer)  //send encoded data to buffer
 		dec.ReadFrom(&buffer) //fill decoder from buffer
 		bd = dec.Byte()
 		dec.Skip()
@@ -73,7 +69,7 @@ func TestQuickEncDec(t *testing.T) {
 func BenchmarkBasicEncodeGob(b *testing.B) {
 	var (
 		network bytes.Buffer
-		err error
+		err     error
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -88,8 +84,8 @@ func BenchmarkBasicEncodeGob(b *testing.B) {
 func BenchmarkBasicDecodeGob(b *testing.B) {
 	var (
 		network bytes.Buffer
-		err error
-		v testType
+		err     error
+		v       testType
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -122,7 +118,7 @@ func BenchmarkBasicEncodeEncDec(b *testing.B) {
 		}
 	}
 }
- 
+
 func BenchmarkBasicDecodeEncDec(b *testing.B) {
 	var (
 		v testType
@@ -151,8 +147,8 @@ func BenchmarkBasicDecodeEncDec(b *testing.B) {
 func BenchmarkSliceEncodeGob(b *testing.B) {
 	var (
 		network bytes.Buffer
-		err error		
-		v []string = []string{"a", "ab", "abc", "abcd"}
+		err     error
+		v       = []string{"a", "ab", "abc", "abcd"}
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -164,11 +160,11 @@ func BenchmarkSliceEncodeGob(b *testing.B) {
 	}
 }
 func BenchmarkSliceDecodeGob(b *testing.B) {
-	
+
 	var (
 		network bytes.Buffer
-		err error
-		v []string = []string{"a", "ab", "abc", "abcd"}
+		err     error
+		v       = []string{"a", "ab", "abc", "abcd"}
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -181,7 +177,7 @@ func BenchmarkSliceDecodeGob(b *testing.B) {
 	b.ResetTimer()
 	dec := gob.NewDecoder(&network)
 	for i := 0; i < b.N; i++ {
-		v = make([]string,0)
+		v = make([]string, 0)
 		err = dec.Decode(&v)
 		if err != nil {
 			b.Error(err)
@@ -192,9 +188,9 @@ func BenchmarkSliceDecodeGob(b *testing.B) {
 
 func BenchmarkSliceEncodeEncDec(b *testing.B) {
 	var (
-		v []string = []string{"a", "ab", "abc", "abcd"}
+		v = []string{"a", "ab", "abc", "abcd"}
 	)
- 	enc := NewEnc()
+	enc := NewEnc()
 	for i := 0; i < b.N; i++ {
 		enc.Uint64(uint64(len(v)))
 		for _, j := range v {
@@ -206,11 +202,11 @@ func BenchmarkSliceEncodeEncDec(b *testing.B) {
 		}
 	}
 }
- 
+
 func BenchmarkSliceDecodeEncDec(b *testing.B) {
-	
+
 	var (
-		v []string = []string{"a", "ab", "abc", "abcd"}	
+		v = []string{"a", "ab", "abc", "abcd"}
 	)
 	enc := NewEnc()
 	for i := 0; i < b.N; i++ {
@@ -227,7 +223,7 @@ func BenchmarkSliceDecodeEncDec(b *testing.B) {
 	dec := NewDec(enc.Bytes())
 	for i := 0; i < b.N; i++ {
 		l := int(dec.Uint64())
-		v = make([]string,l)
+		v = make([]string, l)
 		for j := 0; j < l; j++ {
 			v[j] = string(dec.ByteSlice())
 		}
@@ -236,15 +232,14 @@ func BenchmarkSliceDecodeEncDec(b *testing.B) {
 			return
 		}
 	}
-} 
-
+}
 
 // map enc/dec
 func BenchmarkMapEncodeGob(b *testing.B) {
 	var (
 		network bytes.Buffer
-		err error		
-		v map[string]int = map[string]int{"a":1, "b":2, "c":3, "d":4}
+		err     error
+		v       = map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -256,11 +251,11 @@ func BenchmarkMapEncodeGob(b *testing.B) {
 	}
 }
 func BenchmarkMapDecodeGob(b *testing.B) {
-	
+
 	var (
 		network bytes.Buffer
-		err error
-		v map[string]int = map[string]int{"a":1, "b":2, "c":3, "d":4}
+		err     error
+		v       = map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
 	)
 	enc := gob.NewEncoder(&network)
 	for i := 0; i < b.N; i++ {
@@ -283,9 +278,9 @@ func BenchmarkMapDecodeGob(b *testing.B) {
 }
 func BenchmarkMapEncodeEncDec(b *testing.B) {
 	var (
-		v map[string]int = map[string]int{"a":1, "b":2, "c":3, "d":4}
+		v = map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
 	)
- 	enc := NewEnc()
+	enc := NewEnc()
 	for i := 0; i < b.N; i++ {
 		enc.Uint64(uint64(len(v)))
 		for k, v := range v {
@@ -299,9 +294,9 @@ func BenchmarkMapEncodeEncDec(b *testing.B) {
 	}
 }
 func BenchmarkMapDecodeEncDec(b *testing.B) {
-	
+
 	var (
-		v map[string]int = map[string]int{"a":1, "b":2, "c":3, "d":4}
+		v = map[string]int{"a": 1, "b": 2, "c": 3, "d": 4}
 	)
 	enc := NewEnc()
 	for i := 0; i < b.N; i++ {
@@ -337,8 +332,9 @@ type testType struct {
 	D string
 	E time.Time
 }
+
 func newTestType() testType {
-	return testType{1, 123456, 0.123456, "abcdefg", time.Now()/*, []int{1, 2, 3, 4, 5, 6}*//*,  []time.Time{time.Now(),time.Now(),time.Now()}*/}
+	return testType{1, 123456, 0.123456, "abcdefg", time.Now()}
 }
 func (t *testType) MarshalBinary() ([]byte, error) {
 	enc := NewEnc()
