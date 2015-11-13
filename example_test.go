@@ -1,15 +1,16 @@
 package encdec_test
 
 import (
-	"time"
 	"github.com/mrkovec/encdec"
+	"time"
 )
 
 type user struct {
-	name string
-	age int
+	name       string
+	age        int
 	registered time.Time
 }
+
 func (u *user) MarshalBinary() ([]byte, error) {
 	enc := encdec.NewEnc()
 	enc.ByteSlice([]byte(u.name))
@@ -25,10 +26,10 @@ func (u *user) UnmarshalBinary(data []byte) error {
 	return dec.Error()
 }
 
-var users []user    
- 
+var users = []user{{"John", 30, time.Now()}, {"Bill", 60, time.Now()}}
+
 func Example() {
-	
+
 	//encode data to byte slice
 	enc := encdec.NewEnc()
 	enc.Uint64(uint64(len(users)))
@@ -39,15 +40,15 @@ func Example() {
 		panic(enc.Error())
 	}
 	slice := enc.Bytes()
-    
-    //decode data from byte slice
+
+	//decode data from byte slice
 	dec := encdec.NewDec(slice)
 	l := int(dec.Uint64())
 	users = make([]user, l)
 	for i := 0; i < l; i++ {
 		dec.Unmarshaler(&users[i])
-	}    
+	}
 	if dec.Error() != nil {
 		panic(dec.Error())
-	}    
+	}
 }

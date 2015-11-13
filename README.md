@@ -1,5 +1,6 @@
 # encdec
 [![GoDoc](https://godoc.org/github.com/mrkovec/encdec?status.svg)](https://godoc.org/github.com/mrkovec/encdec)
+[![Coverage Status](https://coveralls.io/repos/mrkovec/encdec/badge.svg?branch=master)](https://coveralls.io/r/mrkovec/encdec?branch=master)
 
 **encdec** contains a simple binary encoder/decoder designed for fast marshalling/unmarshalling of fixed array of types into binary stream.
 
