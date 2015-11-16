@@ -180,10 +180,13 @@ func TestEncDecErrorPropagation(t *testing.T) {
 	enc.Int64(1)
 	enc.Float64(1)
 	enc.Marshaler(time.Now())
+	enc.Reset()
+	enc.Marshaler(nil)
+	enc.Reset()
+	enc.ByteSlice(nil)
 
 	dec := NewDec(enc.Bytes())
 	_ = dec.Byte()
-	dec.Reset()
 	dec.Skip()
 	_ = dec.ByteSlice()
 	_ = dec.Uint64()
@@ -191,6 +194,8 @@ func TestEncDecErrorPropagation(t *testing.T) {
 	_ = dec.Float64()
 	var v time.Time
 	dec.Unmarshaler(&v)
+	dec.Reset()
+	dec.Unmarshaler(nil)
 
 	var buffer bytes.Buffer
 	enc.WriteTo(&buffer)
