@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"math"
+	// "fmt"
 )
 
 var (
@@ -141,7 +142,7 @@ func (e *Enc) Byte(x byte) {
 	if e.err != nil {
 		return
 	}
-	e.encbuf = append(e.encbuf, x)
+	e.encbuf = append(e.encbuf, byte(1), x)
 }
 
 // Bytes returns byte slice of encoded data
@@ -228,6 +229,7 @@ func (d *Dec) Unmarshaler(x encoding.BinaryUnmarshaler) {
 		d.err = errDecode
 		return
 	}
+
 	d.err = x.UnmarshalBinary(d.ByteSlice())
 }
 
@@ -315,13 +317,19 @@ func (d *Dec) ByteSlice() []byte {
 		d.lng = int(b)
 	} else {
 		d.lng = int(d.Uint64())
+		if d.lng < 0 {
+			d.err = errDecode
+			return nil
+		}
 	}
-
 	if d.lng == 0 {
 		return []byte{}
 	}
 	d.lst = d.i + d.lng
-
+	if d.lst < 0 {
+		d.err = errDecode
+		return nil
+	}
 	if d.lst > len(d.decbuf) {
 		d.err = errDecodeNotEnoughtData
 		return nil
@@ -342,6 +350,11 @@ func (d *Dec) Byte() byte {
 	if d.err != nil {
 		return 0
 	}
+	d.i++
+	d.havedata()
+	if d.err != nil {
+		return 0
+	}
 	b := d.decbuf[d.i]
 	d.i++
 	return b
@@ -353,8 +366,8 @@ func (d *Dec) Skip() {
 	if d.err != nil {
 		return
 	}
-
 	b := d.decbuf[d.i]
+	// fmt.Println("skip ", b)
 	d.i++
 	if b > 0 && b <= 255 {
 		d.lng = int(b)
@@ -389,7 +402,7 @@ func (d Dec) Pos() int {
 }
 
 func (d *Dec) havedata() {
-	if d.err == nil && d.i >= len(d.decbuf) {
+	if d.err == nil && d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
 		d.err = errNoDecData
 	}
 }

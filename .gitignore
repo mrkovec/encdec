@@ -6,6 +6,8 @@
 # Folders
 _obj
 _test
+crashers
+suppressions
 
 # Architecture specific extensions/prefixes
 *.[568vq]
@@ -71,3 +73,4 @@ $RECYCLE.BIN/
 *.lnk
 *.bat
 *.out
+*.zip

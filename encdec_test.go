@@ -165,7 +165,6 @@ func TestQuickEncDec(t *testing.T) {
 		if dec.Error() != nil || b != bd || !t.Equal(td) {
 			return false
 		}
-
 		return true
 	}, nil); err != nil {
 		t.Error(err)
@@ -198,6 +197,7 @@ func TestEncDecErrorPropagation(t *testing.T) {
 	dec.ReadFrom(&buffer)
 
 	if enc.Error() == nil || dec.Error() == nil || enc.Len() > 0 || dec.Len() > 0 || dec.Pos() > 0 || buffer.Len() > 0 {
+		// fmt.Println(enc.Error(), dec.Error())
 		t.Error(nil)
 		return
 	}
