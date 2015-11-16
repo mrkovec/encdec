@@ -7,77 +7,113 @@ import (
 	"testing/quick"
 	"time"
 )
+
 var e, g interface{}
 
 func TestEncDecByte(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := byte(5)
 	enc.Byte(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	bd := dec.Byte()
-	if dec.Error() != nil {	t.Error(dec.Error()) }
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
 	e, g = d, bd
-	if e != g { t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g) }	
+	if e != g {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g)
+	}
 }
 func TestEncDecUint64(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := uint64(5)
 	enc.Uint64(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	bd := dec.Uint64()
-	if dec.Error() != nil {	t.Error(dec.Error()) }
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
 	e, g = d, bd
-	if e != g { t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g) }	
+	if e != g {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g)
+	}
 }
 func TestEncDecInt64(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := int64(5)
 	enc.Int64(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	bd := dec.Int64()
-	if dec.Error() != nil {	t.Error(dec.Error()) }
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
 	e, g = d, bd
-	if e != g { t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g) }	
+	if e != g {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g)
+	}
 }
 func TestEncDecFloat64(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := float64(5)
 	enc.Float64(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	bd := dec.Float64()
-	if dec.Error() != nil {	t.Error(dec.Error()) }
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
 	e, g = d, bd
-	if e != g { t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g) }	
+	if e != g {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g)
+	}
 }
 func TestEncDecByteSlice(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := []byte{1, 2, 3}
 	enc.ByteSlice(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	bd := dec.ByteSlice()
-	if dec.Error() != nil {	t.Error(dec.Error()) }
-	if !bytes.Equal(d, bd) { t.Errorf("expected: %v (type %T) and got: %v (type %T)", d, d, bd, bd) }	
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
+	if !bytes.Equal(d, bd) {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", d, d, bd, bd)
+	}
 }
 func TestEncDecMarshalUnmarshal(t *testing.T) {
-	enc := NewEnc()	
+	enc := NewEnc()
 	d := time.Now()
 	enc.Marshaler(d)
-	if enc.Error() != nil { t.Error(enc.Error()) }
+	if enc.Error() != nil {
+		t.Error(enc.Error())
+	}
 	dec := NewDec(enc.Bytes())
 	var bd time.Time
 	dec.Unmarshaler(&bd)
-	if dec.Error() != nil {	t.Error(dec.Error()) }
-	if !d.Equal(bd) { t.Errorf("expected: %v (type %T) and got: %v (type %T)", d, d, bd, bd) }	
+	if dec.Error() != nil {
+		t.Error(dec.Error())
+	}
+	if !d.Equal(bd) {
+		t.Errorf("expected: %v (type %T) and got: %v (type %T)", d, d, bd, bd)
+	}
 }
 
 func TestQuickEncDec(t *testing.T) {
 	if err := quick.Check(func(b byte, x uint64, y int64, f float64, buf []byte, str string) bool {
-		var buffer bytes.Buffer
 
 		enc := NewEnc()
 		enc.Byte(b)
@@ -94,6 +130,10 @@ func TestQuickEncDec(t *testing.T) {
 		enc.Marshaler(t)
 
 		dec := NewDec(enc.Bytes())
+		if enc.Error() != nil || dec.Error() != nil || enc.Len() != dec.Len() || dec.Pos() != 0 {
+			return false
+		}
+
 		bd := dec.Byte()
 		xd := dec.Uint64()
 		yd := dec.Int64()
@@ -107,9 +147,11 @@ func TestQuickEncDec(t *testing.T) {
 		var td time.Time
 		dec.Unmarshaler(&td)
 
-		if enc.Error() != nil || dec.Error() != nil || b != bd || x != xd || y != yd || f != fd || !bytes.Equal(buf, bufd) || str != strd || !t.Equal(td) {
+		if enc.Error() != nil || dec.Error() != nil || b != bd || x != xd || y != yd || f != fd || !bytes.Equal(buf, bufd) || str != strd || !t.Equal(td) || dec.Len() != 0 || dec.Pos() != enc.Len() {
 			return false
 		}
+
+		var buffer bytes.Buffer
 		enc.WriteTo(&buffer)  //send encoded data to buffer
 		dec.ReadFrom(&buffer) //fill decoder from buffer
 		bd = dec.Byte()
@@ -128,6 +170,38 @@ func TestQuickEncDec(t *testing.T) {
 	}, nil); err != nil {
 		t.Error(err)
 	}
+}
+
+func TestEncDecErrorPropagation(t *testing.T) {
+	enc := NewEnc()
+	enc.err = errEncode
+	enc.Byte(1)
+	enc.ByteSlice([]byte{1})
+	enc.Uint64(1)
+	enc.Int64(1)
+	enc.Float64(1)
+	enc.Marshaler(time.Now())
+
+	dec := NewDec(enc.Bytes())
+	_ = dec.Byte()
+	dec.Reset()
+	dec.Skip()
+	_ = dec.ByteSlice()
+	_ = dec.Uint64()
+	_ = dec.Int64()
+	_ = dec.Float64()
+	var v time.Time
+	dec.Unmarshaler(&v)
+
+	var buffer bytes.Buffer
+	enc.WriteTo(&buffer)
+	dec.ReadFrom(&buffer)
+
+	if enc.Error() == nil || dec.Error() == nil || enc.Len() > 0 || dec.Len() > 0 || dec.Pos() > 0 || buffer.Len() > 0 {
+		t.Error(nil)
+		return
+	}
+
 }
 
 // simple values enc/dec
