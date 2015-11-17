@@ -45,7 +45,7 @@ func TestFuzzCrashers(t *testing.T) {
 	// 	if !reflect.DeepEqual(v, v1) {
 	// 		panic("not equal")
 	// 	}
-	// }	
+	// }
 }
 
 func testGenerateCorpus(t *testing.T) {

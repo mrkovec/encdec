@@ -117,51 +117,56 @@ func TestQuickEncDec(t *testing.T) {
 		ti := time.Now()
 		for _, s := range sequence {
 			switch {
-				case s <= 50:
-					enc.Uint64(x)
-				case s > 50 && s <= 102:
-					enc.Int64(y)
-				case s > 102 && s <= 153:
-					enc.Float64(f)
-				case s > 153 && s <= 204:
-					enc.ByteSlice(buf)
-				default:
-					enc.Marshaler(&ti)
+			case s <= 50:
+				enc.Uint64(x)
+			case s > 50 && s <= 102:
+				enc.Int64(y)
+			case s > 102 && s <= 153:
+				enc.Float64(f)
+			case s > 153 && s <= 204:
+				enc.ByteSlice(buf)
+			default:
+				enc.Marshaler(&ti)
 			}
 		}
 
+		var buffer bytes.Buffer
+		enc.WriteTo(&buffer) //copy encoded data to buffer
 		dec := NewDec(enc.Bytes())
-		if enc.Error() != nil || dec.Error() != nil || enc.Len() != dec.Len() || dec.Pos() != 0 {
+		dec.ReadFrom(&buffer) //append second copy of encoded data to decoder
+		if enc.Error() != nil || dec.Error() != nil || 2*enc.Len() != dec.Len() || dec.Pos() != 0 {
 			return false
 		}
-		for _, s := range sequence {
-			switch {
+		for rep := 0; rep < 2; rep++ {
+			for _, s := range sequence {
+				switch {
 				case s <= 50:
 					xd := dec.Uint64()
 					if dec.Error() != nil || xd != x {
 						return false
-					}					
+					}
 				case s > 50 && s <= 102:
 					yd := dec.Int64()
 					if dec.Error() != nil || yd != y {
 						return false
-					}					
+					}
 				case s > 102 && s <= 153:
 					fd := dec.Float64()
 					if dec.Error() != nil || fd != f {
 						return false
-					}					
+					}
 				case s > 153 && s <= 204:
 					bufd := dec.ByteSlice()
 					if dec.Error() != nil || !bytes.Equal(buf, bufd) {
 						return false
-					}					
+					}
 				default:
 					var td time.Time
 					dec.Unmarshaler(&td)
 					if dec.Error() != nil || !ti.Equal(td) {
 						return false
-					}					
+					}
+				}
 			}
 		}
 		return true

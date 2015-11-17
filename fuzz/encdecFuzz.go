@@ -1,11 +1,11 @@
 package encdec
 
 import (
-	"reflect"
-	"github.com/mrkovec/encdec"
-	"time"
 	"bytes"
 	"errors"
+	"github.com/mrkovec/encdec"
+	"reflect"
+	"time"
 )
 
 func Fuzz(data []byte) int {
@@ -56,9 +56,8 @@ func (t *fuzzTestType) MarshalBinary() ([]byte, error) {
 	return enc.Bytes(), enc.Error()
 }
 
-
 func (t *fuzzTestType) UnmarshalBinary(data []byte) error {
- 	unmErr := errors.New("unmarshal error")
+	unmErr := errors.New("unmarshal error")
 
 	dec := encdec.NewDec(data)
 	t.a = dec.Uint64()

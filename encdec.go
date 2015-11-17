@@ -46,7 +46,7 @@ func (e *Enc) WriteTo(w io.Writer) (int64, error) {
 
 //  Reset discards all encoded data
 func (e *Enc) Reset() {
-	e.err = nil 
+	e.err = nil
 	e.encbuf = e.encbuf[0:0]
 }
 
