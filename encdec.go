@@ -20,7 +20,7 @@ var (
 // streams encoded data into []byte buffer
 type Enc struct {
 	err    error
-	buf64  [2 * binary.MaxVarintLen64]byte
+	buf64  [binary.MaxVarintLen64]byte
 	encbuf []byte
 	lng    int
 }
@@ -80,11 +80,11 @@ func (e *Enc) Int64(x int64) []byte {
 	if e.err != nil {
 		return nil
 	}
-	defer func(e *Enc) {
-		if r := recover(); r != nil {
-			e.err = errEncode
-		}
-	}(e)
+	// defer func(e *Enc) {
+	// 	if r := recover(); r != nil {
+	// 		e.err = errEncode
+	// 	}
+	// }(e)
 
 	e.lng = binary.PutVarint(e.buf64[:], x)
 	if e.lng == 0 {
@@ -101,11 +101,11 @@ func (e *Enc) Uint64(x uint64) []byte {
 	if e.err != nil {
 		return nil
 	}
-	defer func(e *Enc) {
-		if r := recover(); r != nil {
-			e.err = errEncode
-		}
-	}(e)
+	// defer func(e *Enc) {
+	// 	if r := recover(); r != nil {
+	// 		e.err = errEncode
+	// 	}
+	// }(e)
 
 	e.lng = binary.PutUvarint(e.buf64[:], x)
 	if e.lng == 0 {
@@ -127,24 +127,25 @@ func (e *Enc) ByteSlice(x []byte) {
 		return
 	}
 	e.lng = len(x)
-	if e.lng > 0 && e.lng < 256 {
-		e.encbuf = append(e.encbuf, byte(e.lng))
-	} else {
-		e.encbuf = append(e.encbuf, byte(0))
-		e.Uint64(uint64(e.lng))
-	}
+	// if e.lng > 0 && e.lng < 256 {
+	// 	e.encbuf = append(e.encbuf, byte(e.lng))
+	// } else {
+	// 	e.encbuf = append(e.encbuf, byte(0))
+	// 	e.Uint64(uint64(e.lng))
+	// }
+	e.Uint64(uint64(e.lng))
 	if e.lng > 0 {
 		e.encbuf = append(e.encbuf, x...)
 	}
 }
 
 // Byte encodes a byte into buffer
-func (e *Enc) Byte(x byte) {
-	if e.err != nil {
-		return
-	}
-	e.encbuf = append(e.encbuf, byte(1), x)
-}
+// func (e *Enc) Byte(x byte) {
+// 	if e.err != nil {
+// 		return
+// 	}
+// 	e.encbuf = append(e.encbuf, byte(1), x)
+// }
 
 // Bytes returns byte slice of encoded data
 func (e Enc) Bytes() []byte {
@@ -325,16 +326,21 @@ func (d *Dec) ByteSlice() []byte {
 		d.err = errNoDecData
 		return nil
 	}
-	b := d.decbuf[d.i]
-	d.i++
-	if b > 0 && b <= 255 {
-		d.lng = int(b)
-	} else {
-		d.lng = int(d.Uint64())
-		if d.lng < 0 {
-			d.err = errDecode
-			return nil
-		}
+	// b := d.decbuf[d.i]
+	// d.i++
+	// if b > 0 && b <= 255 {
+	// 	d.lng = int(b)
+	// } else {
+	// 	d.lng = int(d.Uint64())
+	// 	if d.lng < 0 {
+	// 		d.err = errDecode
+	// 		return nil
+	// 	}
+	// }
+	d.lng = int(d.Uint64())
+	if d.lng < 0 {
+		d.err = errDecode
+		return nil
 	}
 	if d.lng == 0 {
 		return []byte{}
@@ -359,51 +365,51 @@ func (d *Dec) ByteSlice() []byte {
 }
 
 // Byte decodes a byte from buffer
-func (d *Dec) Byte() byte {
-	if d.err != nil {
-		return 0
-	}
-	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
-		d.err = errNoDecData
-		return 0
-	}
-	d.i++
-	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
-		d.err = errNoDecData
-		return 0
-	}
-	b := d.decbuf[d.i]
-	d.i++
-	return b
-}
+// func (d *Dec) Byte() byte {
+// 	if d.err != nil {
+// 		return 0
+// 	}
+// 	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
+// 		d.err = errNoDecData
+// 		return 0
+// 	}
+// 	d.i++
+// 	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
+// 		d.err = errNoDecData
+// 		return 0
+// 	}
+// 	b := d.decbuf[d.i]
+// 	d.i++
+// 	return b
+// }
 
 // Skip skips next encoded entity
-func (d *Dec) Skip() {
-	if d.err != nil {
-		return
-	}
-	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
-		d.err = errNoDecData
-		return
-	}
-	b := d.decbuf[d.i]
-	d.i++
-	if b > 0 && b <= 255 {
-		d.lng = int(b)
-	} else {
-		d.lng = int(d.Uint64())
-	}
-	if d.lng < 0 {
-		d.err = errDecode
-		return
-	}
-	d.lst = d.i + d.lng
-	if d.lst > len(d.decbuf) {
-		d.err = errDecode
-		return
-	}
-	d.i = d.lst
-}
+// func (d *Dec) Skip() {
+// 	if d.err != nil {
+// 		return
+// 	}
+// 	if d.i >= len(d.decbuf) || d.i < 0 /*overflow*/ {
+// 		d.err = errNoDecData
+// 		return
+// 	}
+// 	b := d.decbuf[d.i]
+// 	d.i++
+// 	if b > 0 && b <= 255 {
+// 		d.lng = int(b)
+// 	} else {
+// 		d.lng = int(d.Uint64())
+// 	}
+// 	if d.lng < 0 {
+// 		d.err = errDecode
+// 		return
+// 	}
+// 	d.lst = d.i + d.lng
+// 	if d.lst > len(d.decbuf) {
+// 		d.err = errDecode
+// 		return
+// 	}
+// 	d.i = d.lst
+// }
 
 //  Error returns decoding error if any
 func (d Dec) Error() error {

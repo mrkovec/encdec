@@ -1,9 +1,11 @@
 package encdec
 
 import (
-	"github.com/dvyukov/go-fuzz/examples/fuzz"
+	"reflect"
 	"github.com/mrkovec/encdec"
 	"time"
+	"bytes"
+	"errors"
 )
 
 func Fuzz(data []byte) int {
@@ -25,50 +27,61 @@ func Fuzz(data []byte) int {
 	if dec.Error() != nil {
 		panic(dec.Error())
 	}
-	if !fuzz.DeepEqual(v, v1) {
+	if !reflect.DeepEqual(v, v1) {
 		panic("not equal")
 	}
 	return 1
 }
 
 type fuzzTestType struct {
-	A byte
-	B uint64
-	C int64
-	D float64
-	E []byte
-	F time.Time
+	a uint64
+	b int64
+	c float64
+	d []byte
+	e time.Time
 }
 
 func (t *fuzzTestType) MarshalBinary() ([]byte, error) {
 	enc := encdec.NewEnc()
-	enc.Byte(t.A)
-	enc.Byte(t.A)
-	enc.Uint64(t.B)
-	enc.Uint64(t.B)
-	enc.Int64(t.C)
-	enc.Int64(t.C)
-	enc.Float64(t.D)
-	enc.Float64(t.D)
-	enc.ByteSlice(t.E)
-	enc.ByteSlice(t.E)
-	enc.Marshaler(&t.F)
-	enc.Marshaler(&t.F)
+	enc.Uint64(t.a)
+	enc.Uint64(t.a)
+	enc.Int64(t.b)
+	enc.Int64(t.b)
+	enc.Float64(t.c)
+	enc.Float64(t.c)
+	enc.ByteSlice(t.d)
+	enc.ByteSlice(t.d)
+	enc.Marshaler(&t.e)
+	enc.Marshaler(&t.e)
 	return enc.Bytes(), enc.Error()
 }
+
+
 func (t *fuzzTestType) UnmarshalBinary(data []byte) error {
+ 	unmErr := errors.New("unmarshal error")
+
 	dec := encdec.NewDec(data)
-	dec.Skip()
-	t.A = dec.Byte()
-	dec.Skip()
-	t.B = dec.Uint64()
-	dec.Skip()
-	t.C = dec.Int64()
-	dec.Skip()
-	t.D = dec.Float64()
-	dec.Skip()
-	t.E = dec.ByteSlice()
-	dec.Skip()
-	dec.Unmarshaler(&t.F)
+	t.a = dec.Uint64()
+	if t.a != dec.Uint64() {
+		return unmErr
+	}
+	t.b = dec.Int64()
+	if t.b != dec.Int64() {
+		return unmErr
+	}
+	t.c = dec.Float64()
+	if t.c != dec.Float64() {
+		return unmErr
+	}
+	t.d = dec.ByteSlice()
+	if !bytes.Equal(t.d, dec.ByteSlice()) {
+		return unmErr
+	}
+	dec.Unmarshaler(&t.e)
+	var et time.Time
+	dec.Unmarshaler(&et)
+	if !t.e.Equal(et) {
+		return unmErr
+	}
 	return dec.Error()
 }

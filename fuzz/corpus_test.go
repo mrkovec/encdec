@@ -7,6 +7,7 @@ import (
 	"testing"
 	"testing/quick"
 	"time"
+	// "reflect"
 )
 
 func TestFuzzCrashers(t *testing.T) {
@@ -20,15 +21,40 @@ func TestFuzzCrashers(t *testing.T) {
 		dec := encdec.NewDec(c)
 		dec.Unmarshaler(&v)
 	}
+	// var errors = [][]byte{
+	// 	[]byte("\x02\xb6\x01\t000000000\t000000000\t000000000\t000000000\n0000000000\n0000000000\x010W\x02000000000000000000000000000000000000000000000000000" +
+	// 			"00000000000000000000000000000000000\x000\n0000000000\x01\x0f\x0100000000000000")}
+	// for _, e := range errors {
+	// 	dec := encdec.NewDec(e)
+	// 	dec.Unmarshaler(&v)
+	// 	if dec.Error() != nil {
+	// 		panic(dec.Error())
+	// 	}
+	// 	enc := encdec.NewEnc()
+	// 	enc.Marshaler(&v)
+	// 	if enc.Error() != nil {
+	// 		panic(enc.Error())
+	// 	}
+	// 	fmt.Printf("%v\n%v\n%v\n", e, v, enc.Bytes())
+	// 	var v1 fuzzTestType
+	// 	dec = encdec.NewDec(enc.Bytes())
+	// 	dec.Unmarshaler(&v1)
+	// 	if dec.Error() != nil {
+	// 		panic(dec.Error())
+	// 	}
+	// 	if !reflect.DeepEqual(v, v1) {
+	// 		panic("not equal")
+	// 	}
+	// }	
 }
 
 func testGenerateCorpus(t *testing.T) {
 	i := 0
-	if err := quick.Check(func(b1 byte, x1 uint64, y1 int64, f1 float64, buf1 []byte) bool {
-		fi, _ := os.Create(fmt.Sprintf("corpus/%v", i))
+	if err := quick.Check(func(x1 uint64, y1 int64, f1 float64, buf1 []byte) bool {
+		fi, _ := os.Create(fmt.Sprintf("corpus/init%v", i))
 		i++
 
-		v := fuzzTestType{b1, x1, y1, f1, buf1, time.Now()}
+		v := fuzzTestType{x1, y1, f1, buf1, time.Now()}
 		enc := encdec.NewEnc()
 		enc.Marshaler(&v)
 		fi.Write(enc.Bytes())

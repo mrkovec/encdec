@@ -12,17 +12,17 @@ var e, g interface{}
 
 func TestEncDecByte(t *testing.T) {
 	enc := NewEnc()
-	d := byte(5)
-	enc.Byte(d)
+	d := []byte{5}
+	enc.ByteSlice(d)
 	if enc.Error() != nil {
 		t.Error(enc.Error())
 	}
 	dec := NewDec(enc.Bytes())
-	bd := dec.Byte()
+	bd := dec.ByteSlice()
 	if dec.Error() != nil {
 		t.Error(dec.Error())
 	}
-	e, g = d, bd
+	e, g = d[0], bd[0]
 	if e != g {
 		t.Errorf("expected: %v (type %T) and got: %v (type %T)", e, e, g, g)
 	}
@@ -111,59 +111,58 @@ func TestEncDecMarshalUnmarshal(t *testing.T) {
 		t.Errorf("expected: %v (type %T) and got: %v (type %T)", d, d, bd, bd)
 	}
 }
-
 func TestQuickEncDec(t *testing.T) {
-	if err := quick.Check(func(b byte, x uint64, y int64, f float64, buf []byte, str string) bool {
-
+	if err := quick.Check(func(sequence []byte, x uint64, y int64, f float64, buf []byte) bool {
 		enc := NewEnc()
-		enc.Byte(b)
-		enc.Byte(b)
-		enc.Byte(b)
-		enc.Reset() //clear encoded data
-		enc.Byte(b)
-		enc.Uint64(x)
-		enc.Int64(y)
-		enc.Float64(f)
-		enc.ByteSlice(buf)
-		enc.ByteSlice([]byte(str))
-		t := time.Now()
-		enc.Marshaler(t)
+		ti := time.Now()
+		for _, s := range sequence {
+			switch {
+				case s <= 50:
+					enc.Uint64(x)
+				case s > 50 && s <= 102:
+					enc.Int64(y)
+				case s > 102 && s <= 153:
+					enc.Float64(f)
+				case s > 153 && s <= 204:
+					enc.ByteSlice(buf)
+				default:
+					enc.Marshaler(&ti)
+			}
+		}
 
 		dec := NewDec(enc.Bytes())
 		if enc.Error() != nil || dec.Error() != nil || enc.Len() != dec.Len() || dec.Pos() != 0 {
 			return false
 		}
-
-		bd := dec.Byte()
-		xd := dec.Uint64()
-		yd := dec.Int64()
-		dec.Reset() //start from begining
-		bd = dec.Byte()
-		xd = dec.Uint64()
-		yd = dec.Int64()
-		fd := dec.Float64()
-		bufd := dec.ByteSlice()
-		strd := string(dec.ByteSlice())
-		var td time.Time
-		dec.Unmarshaler(&td)
-
-		if enc.Error() != nil || dec.Error() != nil || b != bd || x != xd || y != yd || f != fd || !bytes.Equal(buf, bufd) || str != strd || !t.Equal(td) || dec.Len() != 0 || dec.Pos() != enc.Len() {
-			return false
-		}
-
-		var buffer bytes.Buffer
-		enc.WriteTo(&buffer)  //send encoded data to buffer
-		dec.ReadFrom(&buffer) //fill decoder from buffer
-		bd = dec.Byte()
-		dec.Skip()
-		dec.Skip()
-		dec.Skip()
-		dec.Skip()
-		dec.Skip()
-		dec.Unmarshaler(&td)
-
-		if dec.Error() != nil || b != bd || !t.Equal(td) {
-			return false
+		for _, s := range sequence {
+			switch {
+				case s <= 50:
+					xd := dec.Uint64()
+					if dec.Error() != nil || xd != x {
+						return false
+					}					
+				case s > 50 && s <= 102:
+					yd := dec.Int64()
+					if dec.Error() != nil || yd != y {
+						return false
+					}					
+				case s > 102 && s <= 153:
+					fd := dec.Float64()
+					if dec.Error() != nil || fd != f {
+						return false
+					}					
+				case s > 153 && s <= 204:
+					bufd := dec.ByteSlice()
+					if dec.Error() != nil || !bytes.Equal(buf, bufd) {
+						return false
+					}					
+				default:
+					var td time.Time
+					dec.Unmarshaler(&td)
+					if dec.Error() != nil || !ti.Equal(td) {
+						return false
+					}					
+			}
 		}
 		return true
 	}, nil); err != nil {
@@ -171,10 +170,69 @@ func TestQuickEncDec(t *testing.T) {
 	}
 }
 
+// func TestQuickEncDec(t *testing.T) {
+// 	if err := quick.Check(func(b byte, x uint64, y int64, f float64, buf []byte, str string) bool {
+
+// 		enc := NewEnc()
+// 		enc.ByteSlice([]byte{b})
+// 		enc.ByteSlice([]byte{b})
+// 		enc.ByteSlice([]byte{b})
+// 		enc.Reset() //clear encoded data
+// 		enc.ByteSlice([]byte{b})
+// 		enc.Uint64(x)
+// 		enc.Int64(y)
+// 		enc.Float64(f)
+// 		enc.ByteSlice(buf)
+// 		enc.ByteSlice([]byte(str))
+// 		t := time.Now()
+// 		enc.Marshaler(t)
+
+// 		dec := NewDec(enc.Bytes())
+// 		if enc.Error() != nil || dec.Error() != nil || enc.Len() != dec.Len() || dec.Pos() != 0 {
+// 			return false
+// 		}
+
+// 		bd := dec.ByteSlice()[0]
+// 		xd := dec.Uint64()
+// 		yd := dec.Int64()
+// 		dec.Reset() //start from begining
+// 		bd = dec.ByteSlice()[0]
+// 		xd = dec.Uint64()
+// 		yd = dec.Int64()
+// 		fd := dec.Float64()
+// 		bufd := dec.ByteSlice()
+// 		strd := string(dec.ByteSlice())
+// 		var td time.Time
+// 		dec.Unmarshaler(&td)
+
+// 		if enc.Error() != nil || dec.Error() != nil || b != bd || x != xd || y != yd || f != fd || !bytes.Equal(buf, bufd) || str != strd || !t.Equal(td) || dec.Len() != 0 || dec.Pos() != enc.Len() {
+// 			return false
+// 		}
+
+// 		var buffer bytes.Buffer
+// 		enc.WriteTo(&buffer)  //send encoded data to buffer
+// 		dec.ReadFrom(&buffer) //fill decoder from buffer
+// 		bd = dec.ByteSlice()[0]
+// 		dec.Skip()
+// 		dec.Skip()
+// 		dec.Skip()
+// 		dec.Skip()
+// 		dec.Skip()
+// 		dec.Unmarshaler(&td)
+
+// 		if dec.Error() != nil || b != bd || !t.Equal(td) {
+// 			return false
+// 		}
+// 		return true
+// 	}, nil); err != nil {
+// 		t.Error(err)
+// 	}
+// }
+
 func TestEncDecErrorPropagation(t *testing.T) {
 	enc := NewEnc()
 	enc.err = errEncode
-	enc.Byte(1)
+	// enc.Byte(1)
 	enc.ByteSlice([]byte{1})
 	enc.Uint64(1)
 	enc.Int64(1)
@@ -186,8 +244,8 @@ func TestEncDecErrorPropagation(t *testing.T) {
 	enc.ByteSlice(nil)
 
 	dec := NewDec(enc.Bytes())
-	_ = dec.Byte()
-	dec.Skip()
+	// _ = dec.Byte()
+	// dec.Skip()
 	_ = dec.ByteSlice()
 	_ = dec.Uint64()
 	_ = dec.Int64()
@@ -470,31 +528,28 @@ func BenchmarkMapDecodeEncDec(b *testing.B) {
 }
 
 type testType struct {
-	A byte
-	B int
-	C float64
-	D string
-	E time.Time
+	A int
+	B float64
+	C string
+	D time.Time
 }
 
 func newTestType() testType {
-	return testType{1, 123456, 0.123456, "abcdefg", time.Now()}
+	return testType{123456, 0.123456, "abcdefg", time.Now()}
 }
 func (t *testType) MarshalBinary() ([]byte, error) {
 	enc := NewEnc()
-	enc.Byte(t.A)
-	enc.Int64(int64(t.B))
-	enc.Float64(t.C)
-	enc.ByteSlice([]byte(t.D))
-	enc.Marshaler(&t.E)
+	enc.Int64(int64(t.A))
+	enc.Float64(t.B)
+	enc.ByteSlice([]byte(t.C))
+	enc.Marshaler(&t.D)
 	return enc.Bytes(), enc.Error()
 }
 func (t *testType) UnmarshalBinary(data []byte) error {
 	dec := NewDec(data)
-	t.A = dec.Byte()
-	t.B = int(dec.Int64())
-	t.C = dec.Float64()
-	t.D = string(dec.ByteSlice())
-	dec.Unmarshaler(&t.E)
+	t.A = int(dec.Int64())
+	t.B = dec.Float64()
+	t.C = string(dec.ByteSlice())
+	dec.Unmarshaler(&t.D)
 	return dec.Error()
 }
