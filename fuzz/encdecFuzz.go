@@ -3,9 +3,9 @@ package encdec
 import (
 	"bytes"
 	"errors"
-	"github.com/mrkovec/encdec"
 	"reflect"
 	"time"
+	"github.com/mrkovec/encdec"
 )
 
 func Fuzz(data []byte) int {
