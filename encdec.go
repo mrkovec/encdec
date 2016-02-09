@@ -154,7 +154,9 @@ func (e Enc) Bytes() []byte {
 	if e.err != nil {
 		return nil
 	}
-	return e.encbuf
+	ret := make([]byte, len(e.encbuf))
+	copy(ret, e.encbuf)
+	return ret
 }
 
 //  Error returns encoding error if any
